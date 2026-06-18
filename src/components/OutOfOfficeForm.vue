@@ -94,7 +94,7 @@
 				<TextEditor
 					id="ooo-message"
 					v-model="message"
-					:html="false"
+					:html="true"
 					:disabled="followingSystem"
 					:bus="textEditorDummyBus" />
 			</fieldset>

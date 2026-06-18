@@ -137,6 +137,10 @@ class OutOfOfficeParser {
 
 		$escapedMessage = SieveUtils::escapeString($state->getMessage());
 		$vacation[] = "\"$escapedMessage\"";
+
+		// TMP: test to see what message was received.
+		throw new \Exception( "\$escapedMessage = $escapedMessage" );
+
 		$vacationCommand = implode(' ', $vacation);
 
 		$subjectSection = [
