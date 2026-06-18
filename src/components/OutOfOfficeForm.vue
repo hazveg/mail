@@ -256,8 +256,6 @@ export default {
 	async mounted() {
 		await this.fetchState()
 		this.initialized = true
-
-		console.log("BANANA")
 	},
 
 	methods: {
@@ -308,18 +306,20 @@ export default {
 						lastDay = new Date(this.lastDay)
 						lastDay.setHours(24, 0, 0, 0)
 					}
-					
-					// PLAIN-TEXT
-					// const messageHtml = false;
-					// const message = toPlain(html(this.message)).value, // CKEditor always returns html data
-					
-					// TMP: pass only ever the html data to the backend, figure out switching later.
-					// HTML
-					const messageHtml = true;
-					const message = this.message;
 
-					console.log(messageHtml)
-					console.log(message)
+					let messageHtml;
+					let message;
+
+					switch (this.account.editorMode) {
+						case 'plaintext':
+							messageHtml = false;
+							message = toPlain(html(this.message)).value; // CKEditor always returns html data
+							break;
+						case 'richtext':
+							messageHtml = true;
+							message = this.message;
+							break;
+					}
 
 					// Date.toISOString() always returns the date in UTC
 					await OutOfOfficeService.update(this.account.id, {
