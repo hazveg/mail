@@ -205,3 +205,58 @@ export function toHtml(text) {
 
 	throw new Error(`Unknown format ${text.format}`)
 }
+
+function hslToHex(value) {
+	const match = value.match(
+		/hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/i,
+	)
+
+	if (!match) {
+		return null
+	}
+
+	const h = Number(match[1]) / 360
+	const s = Number(match[2]) / 100
+	const l = Number(match[3]) / 100
+
+	const hueToRgb = (p, q, t) => {
+		if (t < 0) t += 1
+		if (t > 1) t -= 1
+		if (t < 1 / 6) return p + (q - p) * 6 * t
+		if (t < 1 / 2) return q
+		if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+		return p
+	}
+
+	if (s === 0) {
+		const gray = Math.round(l * 255)
+		return `#${gray.toString(16).padStart(2, '0').repeat(3)}`
+	}
+
+	const q = l < 0.5
+		? l * (1 + s)
+		: l + s - l * s
+	const p = 2 * l - q
+
+	const r = hueToRgb(p, q, h + 1 / 3)
+	const g = hueToRgb(p, q, h)
+	const b = hueToRgb(p, q, h - 1 / 3)
+
+	return '#' + [r, g, b]
+		.map((value) => Math.round(value * 255).toString(16).padStart(2, '0'))
+		.join('')
+}
+
+/**
+ * @param {Text} text text
+ * @return {Text}
+ */
+export function normalizeColors(value) {
+	return value.replace(
+		/(color|background-color)\s*:\s*hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/gi,
+		(match, property, h, s, l) => {
+			const hex = hslToHex(`hsl(${h}, ${s}%, ${l}%)`)
+			return hex ? `${property}:${hex}` : match
+		},
+	)
+}

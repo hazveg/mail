@@ -133,7 +133,7 @@ import OpenInNewIcon from 'vue-material-design-icons/OpenInNew.vue'
 import TextEditor from './TextEditor.vue'
 import * as OutOfOfficeService from '../service/OutOfOfficeService.js'
 import useMainStore from '../store/mainStore.js'
-import { html, plain, toHtml, toPlain } from '../util/text.js'
+import { html, normalizeColors, plain, toHtml, toPlain } from '../util/text.js'
 import { EDITOR_MODE_HTML } from '../store/constants.js'
 
 const OOO_DISABLED = 'disabled'
@@ -346,7 +346,7 @@ export default {
 							break;
 						case 'richtext':
 							messageHtml = true;
-							message = this.message;
+							message = normalizeColors(this.message);
 							break;
 					}
 
