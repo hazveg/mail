@@ -71,7 +71,7 @@
 						</div>
 					</div>
 					<div class="modal-inner--field">
-						<label class="modal-inner--label" for="fromId">
+						<label class="modal-inner--label">
 							{{ t('mail', 'Date') }}
 						</label>
 						<div class="modal-inner--container range">
@@ -299,7 +299,7 @@
 <script>
 import IconClose from '@mdi/svg/svg/close.svg'
 import IconMagnify from '@mdi/svg/svg/magnify.svg'
-import { translate as t } from '@nextcloud/l10n'
+import { t } from '@nextcloud/l10n'
 import moment from '@nextcloud/moment'
 import debouncePromise from 'debounce-promise'
 import uniqBy from 'lodash/fp/uniqBy.js'
@@ -714,7 +714,7 @@ export default {
 
 		.marked-as .modal-inner-inline {
 			display: inline-block;
-			width: 32%;
+			width: 50%;
 
 		}
 		.range {
