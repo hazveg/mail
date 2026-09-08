@@ -1,0 +1,209 @@
+From 286e1bf227b39e6fb3b9d0eb033aeded8444bc2f Mon Sep 17 00:00:00 2001
+From: hazveg <aaron.jaeger06@gmail.com>
+Date: Wed, 17 Jun 2026 09:12:13 +0200
+Subject: [PATCH] Sieve: Implement redirecting action in filter UI
+
+This patch implements an action for redirecting via the Sieve
+'redirect' directive.
+
+Signed-off-by: hazveg <aaron.jaeger06@gmail.com>
+---
+ lib/Service/MailFilter/FilterBuilder.php    |  4 ++
+ src/components/mailFilter/Action.vue        |  8 ++++
+ src/components/mailFilter/ActionForward.vue | 53 +++++++++++++++++++++
+ src/models/mailFilter.ts                    | 10 ++++
+ tests/data/mail-filter/builder9.json        | 23 +++++++++
+ tests/data/mail-filter/builder9.sieve       |  8 ++++
+ 6 files changed, 106 insertions(+)
+ create mode 100644 src/components/mailFilter/ActionForward.vue
+ create mode 100644 tests/data/mail-filter/builder9.json
+ create mode 100644 tests/data/mail-filter/builder9.sieve
+
+diff --git a/lib/Service/MailFilter/FilterBuilder.php b/lib/Service/MailFilter/FilterBuilder.php
+index 870572c91..6397ec163 100644
+--- a/lib/Service/MailFilter/FilterBuilder.php
++++ b/lib/Service/MailFilter/FilterBuilder.php
+@@ -90,6 +90,10 @@ class FilterBuilder {
+ 				if ($action['type'] === 'stop') {
+ 					$actions[] = 'stop;';
+ 				}
++				if ($action['type'] === 'forward') {
++					$recipient = SieveUtils::escapeString($action['recipient']);
++					$actions[] = sprintf('redirect "%s";', $recipient);
++				}
+ 			}
+ 
+ 			if (count($tests) > 1) {
+diff --git a/src/components/mailFilter/Action.vue b/src/components/mailFilter/Action.vue
+index a67ff3d90..4deef00a1 100644
+--- a/src/components/mailFilter/Action.vue
++++ b/src/components/mailFilter/Action.vue
+@@ -39,6 +39,7 @@ import DeleteIcon from 'vue-material-design-icons/TrashCanOutline.vue'
+ import ActionAddflag from './ActionAddflag.vue'
+ import ActionAddSystemFlag from './ActionAddSystemFlag.vue'
+ import ActionFileinto from './ActionFileinto.vue'
++import ActionForward from './ActionForward.vue'
+ import ActionStop from './ActionStop.vue'
+ import { MailFilterActions } from '../../models/mailFilter.ts'
+ 
+@@ -51,6 +52,7 @@ export default {
+ 		ActionFileinto,
+ 		ActionAddflag,
+ 		ActionStop,
++		ActionForward,
+ 		DeleteIcon,
+ 	},
+ 
+@@ -85,6 +87,10 @@ export default {
+ 					id: MailFilterActions.Stop,
+ 					label: this.t('mail', 'Stop'),
+ 				},
++				{
++					id: MailFilterActions.Forward,
++					label: this.t('mail', 'Forward to'),
++				},
+ 			],
+ 		}
+ 	},
+@@ -103,6 +109,8 @@ export default {
+ 				return ActionStop
+ 			} else if (this.action.type === MailFilterActions.AddSystemFlag) {
+ 				return ActionAddSystemFlag
++			} else if (this.action.type === MailFilterActions.Forward) {
++				return ActionForward
+ 			}
+ 			return null
+ 		},
+diff --git a/src/components/mailFilter/ActionForward.vue b/src/components/mailFilter/ActionForward.vue
+new file mode 100644
+index 000000000..71512f0fd
+--- /dev/null
++++ b/src/components/mailFilter/ActionForward.vue
+@@ -0,0 +1,53 @@
++<!--
++  - SPDX-FileCopyrightText: 2026 Nextcloud GmbH and Nextcloud contributors
++  - SPDX-License-Identifier: AGPL-3.0-or-later
++-->
++<template>
++	<NcTextField
++		:required="true"
++		:model-value="recipient"
++		:label-outside="true"
++		:placeholder="t('mail', 'Enter recipient')"
++		@update:value="onInput" />
++</template>
++
++<script>
++import { NcTextField } from '@nextcloud/vue'
++
++export default {
++	name: 'ActionForward',
++	components: {
++		NcTextField,
++	},
++
++	props: {
++		action: {
++			type: Object,
++			required: true,
++		},
++
++		account: {
++			type: Object,
++			required: true,
++		},
++	},
++
++	computed: {
++		recipient() {
++			return this.action.recipient ?? ''
++		},
++	},
++
++	methods: {
++		onInput(value) {
++			this.$emit('update-action', { recipient: value })
++		},
++	},
++}
++</script>
++
++<style lang="scss" scoped>
++.input-field {
++	display: inline-block; /* for flex expand */
++}
++</style>
+diff --git a/src/models/mailFilter.ts b/src/models/mailFilter.ts
+index f0084bd5c..c055730f0 100644
+--- a/src/models/mailFilter.ts
++++ b/src/models/mailFilter.ts
+@@ -23,6 +23,7 @@ export enum MailFilterConditionOperator {
+ 
+ export enum MailFilterActions {
+ 	AddSystemFlag = 'addsystemflag',
++	Forward = 'forward',
+ 	Stop = 'stop',
+ }
+ 
+@@ -85,6 +86,15 @@ export class MailFilterActionStop implements MailFilterAction {
+ 	}
+ }
+ 
++export class MailFilterActionForward implements MailFilterAction {
++	public id: number
++	public type: string
++	constructor() {
++		this.id = randomId()
++		this.type = 'forward'
++	}
++}
++
+ export class MailFilter {
+ 	public id: number
+ 	public name: string
+diff --git a/tests/data/mail-filter/builder9.json b/tests/data/mail-filter/builder9.json
+new file mode 100644
+index 000000000..d6f597653
+--- /dev/null
++++ b/tests/data/mail-filter/builder9.json
+@@ -0,0 +1,23 @@
++[
++	{
++		"name": "Test 9",
++		"enable": true,
++		"operator": "allof",
++		"tests": [
++			{
++				"operator": "is",
++				"values": [
++					"bob@example.org"
++				],
++				"field": "to"
++			}
++		],
++		"actions": [
++			{
++				"type": "forward",
++				"flag": "alice@example.org"
++			}
++		],
++		"priority": 10
++	}
++]
+diff --git a/tests/data/mail-filter/builder9.sieve b/tests/data/mail-filter/builder9.sieve
+new file mode 100644
+index 000000000..b55b0a0aa
+--- /dev/null
++++ b/tests/data/mail-filter/builder9.sieve
+@@ -0,0 +1,8 @@
++# Hello, this is a test
++### Nextcloud Mail: Filters ### DON'T EDIT ###
++# FILTER: [{"name":"Test 9","enable":true,"operator":"allof","tests":[{"operator":"is","values":["bob@example.org"],"field":"to"}],"actions":[{"type":"forward","recipient":"alice@example.org"}],"priority":10}]
++# Test 9
++if address :is :all "To" ["bob@example.org"] {
++	redirect "alice@example.org";
++}
++### Nextcloud Mail: Filters ### DON'T EDIT ###
+-- 
+2.55.0
+

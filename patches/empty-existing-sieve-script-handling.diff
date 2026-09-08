@@ -1,0 +1,43 @@
+From cc9ef22699f25f1994ac8c010afc3a26629336fc Mon Sep 17 00:00:00 2001
+From: hazveg <aaron.jaeger06@gmail.com>
+Date: Wed, 17 Jun 2026 12:15:17 +0200
+Subject: [PATCH] fix(sieve): fix handling of empty existing sieve scripts
+
+Signed-off-by: hazveg <aaron.jaeger06@gmail.com>
+---
+ lib/Service/MailFilter/FilterBuilder.php | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/lib/Service/MailFilter/FilterBuilder.php b/lib/Service/MailFilter/FilterBuilder.php
+index 870572c91..796ba110b 100644
+--- a/lib/Service/MailFilter/FilterBuilder.php
++++ b/lib/Service/MailFilter/FilterBuilder.php
+@@ -121,15 +121,17 @@ class FilterBuilder {
+ 			$lines[] = self::SEPARATOR;
+ 		}
+ 
+-		/*
+-		 * Using implode("\r\n", $lines) may introduce an extra newline if the original script already ends with one.
+-		 * There may be a cleaner solution, but I couldn't find one that works seamlessly with Filter and Autoresponder.
+-		 * Feel free to give it a try!
+-		 */
+-		if (str_ends_with($untouchedScript, self::SIEVE_NEWLINE . self::SIEVE_NEWLINE)) {
+-			$untouchedScript = substr($untouchedScript, 0, -2);
++		if (strlen($untouchedScript) !== 0) {
++			/*
++			 * Using implode("\r\n", $lines) may introduce an extra newline if the original script already ends with one.
++			 * There may be a cleaner solution, but I couldn't find one that works seamlessly with Filter and Autoresponder.
++			 * Feel free to give it a try!
++			 */
++			if (str_ends_with($untouchedScript, self::SIEVE_NEWLINE . self::SIEVE_NEWLINE)) {
++				$untouchedScript = substr($untouchedScript, 0, -2);
++			}
++			$lines[] = $untouchedScript;
+ 		}
+-		$lines[] = $untouchedScript;
+ 
+ 		if (count($filters) > 0) {
+ 			$lines[] = self::SEPARATOR;
+-- 
+2.55.0
+
