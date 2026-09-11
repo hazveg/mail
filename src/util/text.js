@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import conv from 'color-convert'
 import { convert } from 'html-to-text'
 import isString from 'lodash/fp/isString.js'
 import { curry } from 'ramda'
@@ -79,6 +80,25 @@ export function detect(str) {
  */
 export function containsImage(value) {
 	return new DOMParser().parseFromString(value, 'text/html').querySelector('img') !== null
+}
+
+/**
+ * @param {string} htmlString
+ * @return {string}
+ */
+export function htmlHslToHex(htmlString) {
+    return text.replace(
+        /((?:color|background-color)(\s*:\s*))hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/gi,
+        (match, prefix, separator, h, s, l) => {
+            const hex = conv.hsl.hex([
+                Number(h),
+                Number(s),
+                Number(l),
+            ])
+
+            return hex ? `${prefix}#${hex}` : match
+        },
+    )
 }
 
 /**
